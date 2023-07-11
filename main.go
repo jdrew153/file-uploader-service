@@ -154,7 +154,8 @@ func main() {
 	port := os.Getenv("PORT")
 
 	if port {
-		log.Printf("Listening on %s...", port)
+		
+		fmt.Printf("Listening on %s...", port)
 
 		log.Fatal(http.ListenAndServe(port, nil))
 	}
