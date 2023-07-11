@@ -157,7 +157,7 @@ func main() {
 		
 		fmt.Printf("Listening on %s...", port)
 
-		log.Fatal(http.ListenAndServe("0.0.0.0" + port, nil))
+		log.Fatal(http.ListenAndServe("0.0.0.0:" + port, nil))
 	}
 
 	log.Println("Listening on :3000...")
