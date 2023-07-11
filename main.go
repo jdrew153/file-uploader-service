@@ -162,7 +162,7 @@ func main() {
 
 	log.Println("Listening on :3000...")
 
-	log.Fatal(http.ListenAndServe("0.0.0.0" + :3000", nil))
+	log.Fatal(http.ListenAndServe("0.0.0.0" + ":3000", nil))
 
 	
 }
