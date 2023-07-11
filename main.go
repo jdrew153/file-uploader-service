@@ -130,7 +130,11 @@ func main() {
 	http.HandleFunc("/", HandleGetFile)
 
 	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request) {
+		
 		var body DownloadRequest
+
+		fmt.Println("hello from download endpoint")
+		
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -147,7 +151,7 @@ func main() {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	log.Println("Listening on :3002...")
+	log.Println("Listening on :8080...")
 
-	log.Fatal(http.ListenAndServe(":3002", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
