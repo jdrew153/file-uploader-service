@@ -153,7 +153,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 
-	if port != nil {
+	if port != "" {
 		
 		fmt.Printf("Listening on %s...", port)
 
