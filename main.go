@@ -151,7 +151,17 @@ func main() {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	log.Println("Listening on :8080...")
+	port := os.Getenv("PORT")
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	if port {
+		log.Printf("Listening on %s...", port)
+
+		log.Fatal(http.ListenAndServe(port, nil))
+	}
+
+	log.Println("Listening on :3000...")
+
+	log.Fatal(http.ListenAndServe(":3000", nil))
+
+	
 }
