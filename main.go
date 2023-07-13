@@ -66,7 +66,7 @@ func HandleGetFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("Cache miss")
-	file, err := os.ReadFile(filePath)
+	file, err := ReadFile(filePath)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -77,6 +77,26 @@ func HandleGetFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Cache set time: ", time.Since(now))
 	w.Header().Set("Content-Disposition", "inline")
 	GenerateStream(w, r, &file)
+}
+
+func ReadFile(filePath string) ([]byte, error) {
+	fileBytes := make(chan []byte)
+
+	
+	go func() {
+		readBytes, err := os.ReadFile(filePath)
+		fmt.Println("File size after read: ", len(readBytes))
+		if err != nil {
+			fmt.Println("Error reading file: ", err)
+		}
+		fileBytes <- readBytes
+		close(fileBytes)
+	}()
+
+	fileBytesResult := <-fileBytes
+	
+	
+	return fileBytesResult, nil
 }
 
 func GenerateStream(w http.ResponseWriter, r *http.Request, fileBytes *[]byte) {
