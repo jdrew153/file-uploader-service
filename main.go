@@ -58,7 +58,7 @@ func HandleGetFile(w http.ResponseWriter, r *http.Request) {
 	if file, found := fileCache.Get(filePath); found {
 		fmt.Println("Cache hit")
 		fmt.Println("Cache hit time: ", time.Since(now))
-		w.Header().Set("Content-Disposition", "inline")
+		SetCacheHeaders(w, r, filePath)
 		if fileBytes, ok := file.(*[]byte); ok {
 			GenerateStream(w, r, fileBytes)
 			return
@@ -73,9 +73,9 @@ func HandleGetFile(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Cache set")
 	fileCache.Set(filePath, &file, cache.DefaultExpiration)
+	SetCacheHeaders(w, r, filePath)
 
 	fmt.Println("Cache set time: ", time.Since(now))
-	w.Header().Set("Content-Disposition", "inline")
 	GenerateStream(w, r, &file)
 }
 
@@ -143,6 +143,20 @@ func ResizeFile(fileName string, width, height int) error {
 	}
 
 }
+
+func SetCacheHeaders(w http.ResponseWriter, r *http.Request, filePath string) {
+	ext := filepath.Ext(filePath)
+
+	switch ext {
+	case ".jpg", ".jpeg", ".png", ".gif":
+		w.Header().Set("Cache-Control", "public max-age=86400")
+	case ".mp4", ".mov", ".avi", ".webm":
+		w.Header().Set("Cache-Control", "public max-age=604800")
+	default:
+		w.Header().Set("Cache-Control", "public max-age=3600")
+	}
+}
+
 
 func main() {
 	fileCache = cache.New(cache.NoExpiration, cache.NoExpiration)
