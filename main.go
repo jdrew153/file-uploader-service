@@ -161,8 +161,9 @@ func SetCacheHeaders(w http.ResponseWriter, r *http.Request, filePath string) {
 
 func main() {
 	fileCache = cache.New(cache.NoExpiration, cache.NoExpiration)
-
-	http.HandleFunc("/", HandleGetFile)
+	
+        http.Handle("/", http.FileServer(http.Dir("./")))
+	//http.HandleFunc("/", HandleGetFile)
 
 	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request) {
 
