@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"path/filepath"
 
 	"github.com/nfnt/resize"
 	cache "github.com/patrickmn/go-cache"
