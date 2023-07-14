@@ -162,14 +162,16 @@ func SetCacheHeaders(w http.ResponseWriter, r *http.Request, filePath string) {
 func main() {
 	fileCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 	
-        http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	
+        mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path[1:]
 
 		http.ServeFile(w, r, path)
 	})
 	//http.HandleFunc("/", HandleGetFile)
 
-	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request) {
 
 			// Enable CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -208,12 +210,12 @@ func main() {
 		
 		fmt.Printf("Listening on %s...", port)
 
-		log.Fatal(http.ListenAndServe("0.0.0.0:" + port, nil))
+		log.Fatal(http.ListenAndServe("0.0.0.0:" + port, mux))
 	}
 
 	log.Println("Listening on :3000...")
 
-	log.Fatal(http.ListenAndServe("0.0.0.0" + ":3000", nil))
+	log.Fatal(http.ListenAndServe("0.0.0.0" + ":3000", mux))
 
 	
 }
