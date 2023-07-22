@@ -30,10 +30,8 @@ func NewMuxServer(lc fx.Lifecycle,
 	mux.HandleFunc("/m3u8", transcoderController.WriteNewM3U8FileFromMP4)
 
 	handler := cors.Default().Handler(mux)
-	server := &http.Server{
-		Addr:    ":3002",
-		Handler: handler,
-	}
+
+
 
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
@@ -41,12 +39,20 @@ func NewMuxServer(lc fx.Lifecycle,
 			go func() {
 				if os.Getenv("PORT") != "" {
 					log.Println("Starting server on port " + os.Getenv("PORT"))
+					server := &http.Server{
+						Addr:    ":" + os.Getenv("PORT"),
+						Handler: handler,
+					}
 					
 				if err := server.ListenAndServe(); err != nil {
 					log.Println(err)
 				}
 				} else {
 					log.Println("Starting server on port 3002")
+					server := &http.Server{
+						Addr:    ":3002",
+						Handler: handler,
+					}
 					if err := server.ListenAndServe(); err != nil {
 						log.Println(err)
 					}
