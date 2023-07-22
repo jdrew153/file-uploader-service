@@ -2,6 +2,7 @@ package lib
 
 import (
 	"context"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -10,13 +11,17 @@ import (
 )
 
 func CreateRedisClient(lc fx.Lifecycle) *redis.Client {
-	err := godotenv.Load("../cmd/.env")
+	err := godotenv.Load("./cmd/.env")
+	log.Println("redis url...", os.Getenv("REDIS_URL"))
 	opts, _ := redis.ParseURL(os.Getenv("REDIS_URL"))
 	client := redis.NewClient(opts)
+
+	log.Println(client)
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			if err != nil {
+				log.Println(err)
 				return err
 			}
 			return nil

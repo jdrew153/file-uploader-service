@@ -11,7 +11,7 @@ import (
 
 
 func CreatePusherClient(lc fx.Lifecycle) *pusher.Client {
-	err := godotenv.Load("../cmd/.env")
+	err := godotenv.Load("./cmd/.env")
 
 	client := pusher.Client{
 		AppID:   os.Getenv("PUSHER_APP_ID"),

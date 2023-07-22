@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/jdrew153/controllers"
 	"github.com/rs/cors"
@@ -38,10 +39,19 @@ func NewMuxServer(lc fx.Lifecycle,
 		OnStart: func(context.Context) error {
 			
 			go func() {
-				log.Println("Starting server on port 3002")
+				if os.Getenv("PORT") != "" {
+					log.Println("Starting server on port " + os.Getenv("PORT"))
+					
 				if err := server.ListenAndServe(); err != nil {
 					log.Println(err)
 				}
+				} else {
+					log.Println("Starting server on port 3002")
+					if err := server.ListenAndServe(); err != nil {
+						log.Println(err)
+					}
+				}
+				
 			}()
 		
 			return nil
