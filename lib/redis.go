@@ -5,13 +5,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/fx"
 )
 
 func CreateRedisClient(lc fx.Lifecycle) *redis.Client {
-	err := godotenv.Load("./cmd/.env")
+	//err := godotenv.Load("./cmd/.env")
 	log.Println("redis url...", os.Getenv("REDIS_URL"))
 	opts, _ := redis.ParseURL(os.Getenv("REDIS_URL"))
 	client := redis.NewClient(opts)
@@ -20,10 +19,10 @@ func CreateRedisClient(lc fx.Lifecycle) *redis.Client {
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			if err != nil {
-				log.Println(err)
-				return err
-			}
+			// if err != nil {
+			// 	log.Println(err)
+			// 	return err
+			// }
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
