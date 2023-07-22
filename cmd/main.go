@@ -8,15 +8,17 @@ import (
 	"go.uber.org/fx"
 )
 
-
 func main() {
 	fx.New(
 		fx.Provide(
 			controllers.NewTranscoderController,
 			controllers.NewMediaController,
 			services.NewTranscoderService,
+			services.NewMediaService,
 			lib.CreatePusherClient,
+			lib.CreateRedisClient,
+			lib.CreateCache,
 		),
-		fx.Invoke(server.NewMuxServer),	
+		fx.Invoke(server.NewMuxServer),
 	).Run()
 }

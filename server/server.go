@@ -20,7 +20,13 @@ func NewMuxServer(lc fx.Lifecycle,
 
 	mux.HandleFunc("/transcode", transcoderController.Transcode)
 
+	mux.HandleFunc("/download", mediaController.DownloadContent)
+
+	mux.HandleFunc("/download-transcode", transcoderController.DownloadFromUrlToTranscode)
+
 	mux.HandleFunc("/thumbnail", transcoderController.ThumbnailFileReceiver)
+
+	mux.HandleFunc("/m3u8", transcoderController.WriteNewM3U8FileFromMP4)
 
 	handler := cors.Default().Handler(mux)
 	server := &http.Server{

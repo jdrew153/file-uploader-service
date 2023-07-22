@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -23,10 +24,18 @@ func NewTranscoderController(service *services.TranscoderService) *TranscoderCon
 
 type TranscodeRequest struct {
 	InputPath string `json:"inputPath"`
+	Resolutions []string `json:"resolutions"`
 }
 
 
 func (c *TranscoderController) Transcode(w http.ResponseWriter, r *http.Request) {
+
+	log.Println("Transcode request received")
+
+	header := r.Header.Get("x-api-key")
+
+	fmt.Printf("Received header %s\n", header)
+
 	var body TranscodeRequest
 
 	err := json.NewDecoder(r.Body).Decode(&body)
@@ -35,7 +44,13 @@ func (c *TranscoderController) Transcode(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	result := c.Service.Transcode(body.InputPath)
+	log.Println("Transcoding " + fmt.Sprintf("./media/%s", body.InputPath))
+
+	result := c.Service.Transcode(services.TranscodeRequest{
+		InputPath: fmt.Sprintf("./media/%s", body.InputPath),
+		Resolutions: body.Resolutions,
+		ApiKey: header,
+	})
 
 	if result != 1 {
 		http.Error(w, "Transcode failed", http.StatusInternalServerError)
@@ -138,4 +153,52 @@ func (c *TranscoderController) ThumbnailFileReceiver(w http.ResponseWriter, r *h
 		return
 	}
 
+}
+
+
+func (c *TranscoderController) DownloadFromUrlToTranscode(w http.ResponseWriter, r *http.Request) {
+	var body services.DownloadRequest
+
+	err := json.NewDecoder(r.Body).Decode(&body)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = c.Service.DownloadFile(body.URL, body.FileName)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Download complete"))
+
+}
+
+type M3U8Request struct {
+	InputPath string `json:"inputPath"`
+}
+
+func (c *TranscoderController) WriteNewM3U8FileFromMP4(w http.ResponseWriter, r *http.Request) {
+
+	var body M3U8Request
+
+	err := json.NewDecoder(r.Body).Decode(&body)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = c.Service.CreateM3U8(body.InputPath, "480")
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("M3U8 file created"))
 }
