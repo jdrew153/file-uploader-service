@@ -31,7 +31,7 @@ func NewMuxServer(lc fx.Lifecycle,
 
 	handler := cors.Default().Handler(mux)
 
-
+	var serverHolder *http.Server
 
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
@@ -43,7 +43,8 @@ func NewMuxServer(lc fx.Lifecycle,
 						Addr:    ":" + os.Getenv("PORT"),
 						Handler: handler,
 					}
-					
+
+					serverHolder = server
 				if err := server.ListenAndServe(); err != nil {
 					log.Println(err)
 				}
@@ -53,6 +54,7 @@ func NewMuxServer(lc fx.Lifecycle,
 						Addr:    ":3002",
 						Handler: handler,
 					}
+					serverHolder = server
 					if err := server.ListenAndServe(); err != nil {
 						log.Println(err)
 					}
@@ -63,7 +65,7 @@ func NewMuxServer(lc fx.Lifecycle,
 			return nil
 		},
 		OnStop: func(context.Context) error {
-			if err := server.Shutdown(context.Background()); err != nil {
+			if err := serverHolder.Shutdown(context.Background()); err != nil {
 				return err
 			}
 			return nil
