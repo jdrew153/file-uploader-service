@@ -77,6 +77,7 @@ func (s *MediaService) CalculateCacheWeight() {
 
 func (s *MediaService) MediaFromURLFileWriter(url string, fileName string) error {
 
+	log.Println("Downloading file", fileName, "from", url)
 
 	client := &http.Client{}
 
