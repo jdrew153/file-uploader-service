@@ -66,7 +66,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 	defer file.Close()
 
-	out, err := os.Create(fmt.Sprintf("./media/%s", uploadId + "." + ext))
+	out, err := os.Create(fmt.Sprintf("./media/%s", uploadId + ext))
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
