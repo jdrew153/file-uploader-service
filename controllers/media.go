@@ -51,8 +51,7 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(10000 << 20)
-
+	
 	file, header, err := r.FormFile("file")
 
 	uploadId := r.FormValue("uploadId")
