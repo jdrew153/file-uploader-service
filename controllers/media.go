@@ -66,6 +66,13 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 	defer file.Close()
 
+	err = os.MkdirAll("./media", os.ModePerm)
+	
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	out, err := os.Create(fmt.Sprintf("./media/%s", uploadId + ext))
 
 	if err != nil {
