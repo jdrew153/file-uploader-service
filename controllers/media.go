@@ -59,6 +59,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 	ext := filepath.Ext(header.Filename)
 
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -68,7 +69,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 	out, err := os.Create(fmt.Sprintf("./media/%s", uploadId + ext))
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
