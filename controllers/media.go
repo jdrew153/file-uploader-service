@@ -82,20 +82,20 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	//
-	// Remove temp file after 10 seconds - Real image to be uploaded later...
-	//
+	// //
+	// // Remove temp file after 10 seconds - Real image to be uploaded later...
+	// //
 
-	go func(filePath string) {
-		time.Sleep(60 * 2 * time.Second)
-		err := os.Remove(fmt.Sprintf("./media/%s", header.Filename))
+	// go func(filePath string) {
+	// 	time.Sleep(60 * 2 * time.Second)
+	// 	err := os.Remove(fmt.Sprintf("./media/%s", header.Filename))
 		
-		if err != nil {
-			log.Println("Error removing file: ", err)
-			return
-		}
-		log.Println("Removed temp file: ", filePath)
-	}(header.Filename)
+	// 	if err != nil {
+	// 		log.Println("Error removing file: ", err)
+	// 		return
+	// 	}
+	// 	log.Println("Removed temp file: ", filePath)
+	// }(header.Filename)
 
 	w.WriteHeader(http.StatusCreated)
 }
