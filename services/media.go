@@ -113,16 +113,11 @@ func (s *MediaService) MediaFromURLFileWriter(url string, fileName string) error
 
 	defer file.Close()
 
-	for {
-		_, err := io.Copy(file, resp.Body)
+	_, err = io.Copy(file, resp.Body)
 
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Println(err)
-			return err
-		}
+	if err != nil {
+		log.Println(err)
+		return err
 	}
 
 	log.Println("Downloaded file", fileName, "from", url)
