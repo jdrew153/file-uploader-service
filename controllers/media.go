@@ -51,6 +51,13 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request) {
+
+	err := r.ParseMultipartForm(32 << 20) // 32 MB max memory limit for parsing the form
+	
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	
 	file, header, err := r.FormFile("file")
 
