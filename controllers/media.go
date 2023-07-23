@@ -50,9 +50,13 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(1000 << 20)
+	r.ParseMultipartForm(10000 << 20)
 
 	file, header, err := r.FormFile("file")
+
+	uploadId := r.FormValue("uploadId")
+
+	ext := filepath.Ext(header.Filename)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -61,7 +65,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 	defer file.Close()
 
-	out, err := os.Create(fmt.Sprintf("./media/%s", header.Filename))
+	out, err := os.Create(fmt.Sprintf("./media/%s", uploadId + "." + ext))
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
