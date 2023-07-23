@@ -4,13 +4,14 @@ import (
 	"context"
 	"os"
 
+	///"github.com/joho/godotenv"
 	"github.com/pusher/pusher-http-go/v5"
 	"go.uber.org/fx"
 )
 
 
 func CreatePusherClient(lc fx.Lifecycle) *pusher.Client {
-	//err := godotenv.Load("./cmd/.env")
+	//err := godotenv.Load("./.env")
 
 	client := pusher.Client{
 		AppID:   os.Getenv("PUSHER_APP_ID"),

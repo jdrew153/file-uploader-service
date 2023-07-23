@@ -10,7 +10,7 @@ import (
 )
 
 func CreateRedisClient(lc fx.Lifecycle) *redis.Client {
-	//err := godotenv.Load("./cmd/.env")
+	//err := godotenv.Load("./.env")
 	log.Println("redis url...", os.Getenv("REDIS_URL"))
 	opts, _ := redis.ParseURL(os.Getenv("REDIS_URL"))
 	client := redis.NewClient(opts)

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -91,6 +92,37 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 		}
 		log.Println("Removed temp file: ", filePath)
 	}(header.Filename)
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+type DownloadMediaRequest struct {
+	Url string `json:"url"`
+	FileName string `json:"fileName"`
+}
+
+func (c *MediaController) DownloadMediaFromUrl(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body DownloadMediaRequest
+
+	err := json.NewDecoder(r.Body).Decode(&body)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = c.Service.MediaFromURLFileWriter(body.Url, body.FileName)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
 }

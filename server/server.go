@@ -21,6 +21,8 @@ func NewMuxServer(lc fx.Lifecycle,
 
 	mux.HandleFunc("/transcode", transcoderController.Transcode)
 
+	mux.HandleFunc("/download-url", mediaController.DownloadMediaFromUrl)
+
 	mux.HandleFunc("/download", mediaController.DownloadContent)
 
 	mux.HandleFunc("/download-transcode", transcoderController.DownloadFromUrlToTranscode)

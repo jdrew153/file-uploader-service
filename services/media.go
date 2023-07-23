@@ -3,6 +3,7 @@ package services
 import (
 	"io"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/hashicorp/golang-lru/v2"
@@ -70,4 +71,54 @@ func (s *MediaService) CalculateCacheWeight() {
 	}
 
 	log.Println("Cache size", size / 1000000, "MB")
+}
+
+
+
+func (s *MediaService) MediaFromURLFileWriter(url string, fileName string) error {
+
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	file, err := os.Create("./media/" + fileName)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	defer file.Close()
+
+	for {
+		_, err := io.Copy(file, resp.Body)
+
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Println(err)
+			return err
+		}
+	}
+
+	log.Println("Downloaded file", fileName, "from", url)
+
+	return nil
+	
 }
