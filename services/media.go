@@ -97,6 +97,13 @@ func (s *MediaService) MediaFromURLFileWriter(url string, fileName string) error
 
 	defer resp.Body.Close()
 
+		err = os.MkdirAll("./media", os.ModePerm)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
 	file, err := os.Create("./media/" + fileName)
 
 	if err != nil {
