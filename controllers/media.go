@@ -57,6 +57,16 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 
 func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request) {
 
+	 // Set the CORS headers
+    w.Header().Set("Access-Control-Allow-Origin", "https://sploader.vercel.app")
+    w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS") // Add any other allowed methods
+    w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With")
+
+    // Check if it's an OPTIONS request (pre-flight request) and handle it separately
+    if r.Method == "OPTIONS" {
+        return
+    }
+
 	log.Println("starting download request...")
 
 	err := r.ParseMultipartForm(2 << 30) // 32 MB max memory limit for parsing the form
