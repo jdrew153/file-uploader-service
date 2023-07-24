@@ -109,7 +109,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 	}
 
 	// Rename the temporary file to the final file name using uploadId and ext
-    finalFileName := fmt.Sprintf("./media/%s%s", uploadID, ext)
+    finalFileName := fmt.Sprintf("./media/%s%s", uploadId, ext)
     if err := os.Rename(tempFile.Name(), finalFileName); err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
