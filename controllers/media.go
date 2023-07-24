@@ -57,30 +57,13 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 
 func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request) {
 
-
 	log.Println("starting download request...")
-
-	err := r.ParseMultipartForm(2 << 30) // 32 MB max memory limit for parsing the form
-	
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	file, header, err := r.FormFile("file")
 
 	uploadId := r.FormValue("uploadId")
 
-	ext := filepath.Ext(header.Filename)
+	ext := r.FormValue("ext")
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	defer file.Close()
-
-	err = os.MkdirAll("./media", os.ModePerm)
+	err := os.MkdirAll("./media", os.ModePerm)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -95,13 +78,13 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 	defer out.Close()
 
-	bufferSize := 64 * 1024
+	bufferSize := 1024 * 1024
 
 	buffer := make([]byte, bufferSize)
 	var written int64
 
 	for {
-		n, err := file.Read(buffer)
+		n, err := r.Body.Read(buffer)
 
 		if err != nil && err != io.EOF {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
