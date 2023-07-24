@@ -53,67 +53,46 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request) {
+err := r.ParseMultipartForm(2 << 30) // 32 MB max memory limit for parsing the form
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	log.Println("starting download request...")
+	file, header, err := r.FormFile("file")
 
 	uploadId := r.FormValue("uploadId")
 
-	ext := r.FormValue("ext")
-
-	log.Println("ext", ext)
-	log.Println("uploadId", uploadId)
-
-
-	err := os.MkdirAll("./media", os.ModePerm)
+	ext := filepath.Ext(header.Filename)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	 // Create a temporary file to store the chunks
-    tempFile, err := os.CreateTemp("", "temp-*")
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    defer tempFile.Close()
 
-	bufferSize := 1024
+	defer file.Close()
 
-	buffer := make([]byte, bufferSize)
-	var written int64
+	err = os.MkdirAll("./media", os.ModePerm)
 
-	for {
-		n, err := r.Body.Read(buffer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	out, err := os.Create(fmt.Sprintf("./media/%s", uploadId + ext))
 
-		if err != nil && err != io.EOF {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if n == 0 {
-			break
-		}
-
-		nWritten, err := tempFile.Write(buffer[:n])
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		written += int64(nWritten)
-
-		if written%(10<<20) == 0 {
-			log.Printf("Uploaded: %.2f MB", float64(written)/(1<<20))
-		}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	// Rename the temporary file to the final file name using uploadId and ext
-    finalFileName := fmt.Sprintf("./media/%s%s", uploadId, ext)
-    if err := os.Rename(tempFile.Name(), finalFileName); err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+	defer out.Close()
+
+	_, err = io.Copy(out, file)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	log.Printf("File uploaded successfully! Size: %.2f MB", float64(written)/(1<<20))
 
