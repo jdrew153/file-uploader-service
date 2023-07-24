@@ -27,10 +27,7 @@ func NewMediaController(s *services.MediaService) *MediaController {
 func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 	filePath := r.URL.Path[1:]
 
-	if filePath == "" {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+	
 	
 	totalPath := fmt.Sprintf("./%s", filePath)
 
@@ -62,6 +59,8 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 	uploadId := r.FormValue("uploadId")
 
 	ext := r.FormValue("ext")
+
+	log.Println("ext", ext)
 
 	err := os.MkdirAll("./media", os.ModePerm)
 
