@@ -61,6 +61,8 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 	ext := r.FormValue("ext")
 
 	log.Println("ext", ext)
+	log.Println("uploadId", uploadId)
+
 
 	err := os.MkdirAll("./media", os.ModePerm)
 
