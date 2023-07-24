@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"path/filepath"
 	"time"
 
@@ -26,6 +27,11 @@ func NewMediaController(s *services.MediaService) *MediaController {
 
 func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 	filePath := r.URL.Path[1:]
+
+	if filePath == "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	
 	totalPath := fmt.Sprintf("./%s", filePath)
 
@@ -89,27 +95,19 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 	defer out.Close()
 
-	_, err = io.Copy(out, file)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		_, err := io.Copy(out, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		wg.Done()
+	}()
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// //
-	// // Remove temp file after 10 seconds - Real image to be uploaded later...
-	// //
-
-	// go func(filePath string) {
-	// 	time.Sleep(60 * 2 * time.Second)
-	// 	err := os.Remove(fmt.Sprintf("./media/%s", header.Filename))
-		
-	// 	if err != nil {
-	// 		log.Println("Error removing file: ", err)
-	// 		return
-	// 	}
-	// 	log.Println("Removed temp file: ", filePath)
-	// }(header.Filename)
+	wg.Wait() // Wait for the file upload to complete before returning the response
+	w.WriteHeader(http.StatusCreated)
 
 	w.WriteHeader(http.StatusCreated)
 }
