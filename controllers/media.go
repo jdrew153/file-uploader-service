@@ -70,14 +70,13 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	out, err := os.Create(fmt.Sprintf("./media/%s", uploadId + ext))
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	defer out.Close()
+	 // Create a temporary file to store the chunks
+    tempFile, err := os.CreateTemp("", "temp-*")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer tempFile.Close()
 
 	bufferSize := 1024
 
@@ -95,7 +94,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 			break
 		}
 
-		nWritten, err := out.Write(buffer[:n])
+		nWritten, err := tempFile.Write(buffer[:n])
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -108,6 +107,13 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 			log.Printf("Uploaded: %.2f MB", float64(written)/(1<<20))
 		}
 	}
+
+	// Rename the temporary file to the final file name using uploadId and ext
+    finalFileName := fmt.Sprintf("./media/%s%s", uploadID, ext)
+    if err := os.Rename(tempFile.Name(), finalFileName); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 
 	log.Printf("File uploaded successfully! Size: %.2f MB", float64(written)/(1<<20))
 
