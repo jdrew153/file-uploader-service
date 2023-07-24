@@ -57,28 +57,50 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 
 func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request) {
 
-	uploadId := r.FormValue("uploadId")
-	ext := filepath.Ext(r.Header.Get("Content-Disposition")) // Get the file extension from the "Content-Disposition" header
+	log.Println("starting download request...")
 
-	err := os.MkdirAll("./media", os.ModePerm)
+	err := r.ParseMultipartForm(2 << 30) // 32 MB max memory limit for parsing the form
+	
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	out, err := os.Create(fmt.Sprintf("./media/%s%s", uploadId, ext))
+	file, header, err := r.FormFile("file")
+
+	uploadId := r.FormValue("uploadId")
+
+	ext := filepath.Ext(header.Filename)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer file.Close()
+
+	err = os.MkdirAll("./media", os.ModePerm)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	out, err := os.Create(fmt.Sprintf("./media/%s", uploadId + ext))
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	defer out.Close()
 
 	bufferSize := 64 * 1024
+
 	buffer := make([]byte, bufferSize)
 	var written int64
 
 	for {
-		n, err := r.Body.Read(buffer)
+		n, err := file.Read(buffer)
 
 		if err != nil && err != io.EOF {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
