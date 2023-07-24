@@ -79,7 +79,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 	defer out.Close()
 
-	bufferSize := 1024 * 1024
+	bufferSize := 1024
 
 	buffer := make([]byte, bufferSize)
 	var written int64
