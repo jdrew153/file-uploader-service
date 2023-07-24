@@ -94,7 +94,7 @@ err := r.ParseMultipartForm(2 << 30) // 32 MB max memory limit for parsing the f
 		return
 	}
 
-	log.Printf("File uploaded successfully! Size: %.2f MB", float64(written)/(1<<20))
+	log.Printf("File uploaded successfully!)
 
 	w.WriteHeader(http.StatusCreated)
 }
