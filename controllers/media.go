@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 	"path/filepath"
 	"time"
 
@@ -58,7 +57,7 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 
 func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request) {
 
-	err := r.ParseMultipartForm(32 << 20) // 32 MB max memory limit for parsing the form
+	err := r.ParseMultipartForm(2 << 30) // 32 MB max memory limit for parsing the form
 	
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -95,19 +94,37 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 	defer out.Close()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		_, err := io.Copy(out, file)
+	bufferSize := 4096
+
+	buffer := make([]byte, bufferSize)
+	var written int64
+
+	for {
+		n, err := file.Read(buffer)
+
+		if err != nil && err != io.EOF {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if n == 0 {
+			break
+		}
+
+		nWritten, err := out.Write(buffer[:n])
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		wg.Done()
-	}()
 
-	wg.Wait() // Wait for the file upload to complete before returning the response
-	w.WriteHeader(http.StatusCreated)
+		written += int64(nWritten)
+
+		if written%(10<<20) == 0 {
+			log.Printf("Uploaded: %.2f MB", float64(written)/(1<<20))
+		}
+	}
+
+	log.Printf("File uploaded successfully! Size: %.2f MB", float64(written)/(1<<20))
 
 	w.WriteHeader(http.StatusCreated)
 }
