@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jdrew153/services"
@@ -53,51 +57,186 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request) {
-err := r.ParseMultipartForm(2 << 30) // 32 MB max memory limit for parsing the form
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	log.SetOutput(os.Stderr)
+	log.Println("Download request received")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+	defer cancel()
+
+	var done = make(chan bool)
+
+	go func(r *http.Request) {
+
+		ext := r.URL.Query().Get("ext")
+		currChunk, _ := strconv.Atoi(r.URL.Query().Get("currChunk"))
+		totalChunks, _ := strconv.Atoi(r.URL.Query().Get("totalChunks"))
+		baseFileName := r.URL.Query().Get("fileName")
+		fileId := r.URL.Query().Get("fileId")
+
+		sentFileSize, _ := strconv.Atoi(r.URL.Query().Get("totalSize"))
+
+		// header needs to be random
+		file, header, err := r.FormFile("file")
+
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		defer file.Close()
+
+		os.Mkdir("./media", os.ModePerm)
+
+		dir := fmt.Sprintf("./%s", fileId)
+		os.MkdirAll(dir, os.ModePerm)
+
+		out, err := os.Create(fmt.Sprintf("%s/%s", dir, strconv.Itoa(currChunk)+"_"+header.Filename+"."+ext))
+
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		defer out.Close()
+
+		_, err = io.CopyN(out, file, r.ContentLength)
+
+		if err != nil && err != io.EOF {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if currChunk < totalChunks {
+
+			w.WriteHeader(http.StatusPartialContent)
+			progress := strconv.Itoa(int(r.ContentLength / int64(sentFileSize)))
+			w.Write([]byte(progress))
+
+		} else {
+			// Create the final file
+			finalFileName := fmt.Sprintf("%s.%s", baseFileName, ext)
+
+			finalFile, err := os.Create(fmt.Sprintf("./media/%s", finalFileName))
+
+			if err != nil {
+				log.Println(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer finalFile.Close()
+
+			files, err := os.ReadDir(dir)
+
+			if err != nil {
+				log.Println(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			totalSize := int64(0)
+
+			sorted := SortFiles(files)
+
+			for _, entry := range sorted {
+				tempFileName := fmt.Sprintf("%s/%s", dir, entry.Name)
+				tempData, err := os.Open(tempFileName)
+
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				totalSize += entry.Size
+
+				tempData.Seek(0, 0)
+
+				written, err := io.Copy(finalFile, tempData)
+
+				if err != nil && err != io.EOF {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				log.Printf("written %d from file %s to final file %s\n", written, entry.Name, finalFileName)
+
+				tempData.Close()
+
+			}
+
+			if totalSize != int64(sentFileSize) {
+				log.Printf("size mistmatch total written: %d vs total expected %d", totalSize, sentFileSize)
+
+				err := os.RemoveAll(dir)
+				if err != nil {
+					return
+				}
+			}
+
+			fmt.Printf("complete final file size %d\n", totalSize)
+
+			err = os.RemoveAll(dir)
+			if err != nil {
+				return
+			}
+
+			w.WriteHeader(http.StatusCreated)
+		}
+
+	
+	done <- true
+
+	}(r)
+
+	select {
+		case <-ctx.Done():
+			log.Println("Upload timed out")
+			w.WriteHeader(http.StatusRequestTimeout)
+			return
+	case <-done:
+		log.Println("Upload completed")
+		w.WriteHeader(http.StatusCreated)
 		return
 	}
-
-	file, header, err := r.FormFile("file")
-
-	uploadId := r.FormValue("uploadId")
-
-	ext := filepath.Ext(header.Filename)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	defer file.Close()
-
-	err = os.MkdirAll("./media", os.ModePerm)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	out, err := os.Create(fmt.Sprintf("./media/%s", uploadId + ext))
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	defer out.Close()
-
-	_, err = io.Copy(out, file)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	log.Printf("File uploaded successfully!")
-
-	w.WriteHeader(http.StatusCreated)
 }
+
+type MyFile struct {
+	Name        string
+	NumericPart int64
+	Size        int64
+}
+
+func SortFiles(files []os.DirEntry) []MyFile {
+
+	var myFiles []MyFile
+	for _, file := range files {
+		numericPart, err := extractNumericPartOfFileName(file.Name())
+		if err != nil {
+			fmt.Println("Error extracting numeric part:", err)
+			continue
+		}
+		info, _ := file.Info()
+		myFiles = append(myFiles, MyFile{Name: file.Name(), NumericPart: numericPart, Size: info.Size()})
+	}
+
+	// Sort the MyFile array based on the NumericPart
+	sort.Slice(myFiles, func(i, j int) bool {
+		return myFiles[i].NumericPart < myFiles[j].NumericPart
+	})
+
+	return myFiles
+}
+
+func extractNumericPartOfFileName(fileName string) (int64, error) {
+	numericPart := strings.Split(fileName, "_test_")[0]
+
+	return strconv.ParseInt(numericPart, 10, 64)
+
+}
+
 
 type DownloadMediaRequest struct {
 	Url string `json:"url"`
