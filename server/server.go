@@ -31,7 +31,13 @@ func NewMuxServer(lc fx.Lifecycle,
 
 	mux.HandleFunc("/m3u8", transcoderController.WriteNewM3U8FileFromMP4)
 
-	handler := cors.Default().Handler(mux)
+		c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS", "PUT", "DELETE"},
+		AllowedHeaders: []string{"*"},
+	})
+
+	handler := c.Handler(mux)
 
 	var serverHolder *http.Server
 
