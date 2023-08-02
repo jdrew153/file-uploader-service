@@ -30,6 +30,18 @@ func NewMediaController(s *services.MediaService) *MediaController {
 
 func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 	filePath := r.URL.Path[1:]
+
+	log.Println(filePath)
+
+	if filePath == "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	if strings.Contains(filePath, ".mp4") || strings.Contains(filePath, ".m3u8") {
+
+		http.ServeFile(w,r, "./" + filePath)
+	}
 	
 	totalPath := fmt.Sprintf("./%s", filePath)
 
@@ -65,6 +77,10 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 	var done = make(chan bool)
 
 	go func(r *http.Request) {
+
+		apiKey := r.Header.Get("x-api-key")
+
+		log.Println("API Key: ", apiKey)
 
 		ext := r.URL.Query().Get("ext")
 		currChunk, _ := strconv.Atoi(r.URL.Query().Get("currChunk"))
@@ -235,6 +251,37 @@ func extractNumericPartOfFileName(fileName string) (int64, error) {
 
 }
 
+
+type DownloadMediaRequest struct {
+	Url string `json:"url"`
+	FileName string `json:"fileName"`
+}
+
+func (c *MediaController) DownloadMediaFromUrl(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body DownloadMediaRequest
+
+	err := json.NewDecoder(r.Body).Decode(&body)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = c.Service.MediaFromURLFileWriter(body.Url, body.FileName)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
 
 
 func SetCacheHeaders(w http.ResponseWriter, r *http.Request, filePath string) {
