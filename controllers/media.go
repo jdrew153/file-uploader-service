@@ -31,7 +31,17 @@ func NewMediaController(s *services.MediaService) *MediaController {
 func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 	filePath := r.URL.Path[1:]
 
-	
+	log.Println(filePath)
+
+	if filePath == "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	if strings.Contains(filePath, ".mp4") || strings.Contains(filePath, ".m3u8") {
+
+		http.ServeFile(w,r, "./" + filePath)
+	}
 	
 	totalPath := fmt.Sprintf("./%s", filePath)
 
@@ -67,6 +77,10 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 	var done = make(chan bool)
 
 	go func(r *http.Request) {
+
+		apiKey := r.Header.Get("x-api-key")
+
+		log.Println("API Key: ", apiKey)
 
 		ext := r.URL.Query().Get("ext")
 		currChunk, _ := strconv.Atoi(r.URL.Query().Get("currChunk"))
