@@ -93,7 +93,12 @@ func (s *MediaService) APIKeyCheck(apiKey string) error {
 	return nil
 }
 
-func (s *MediaService) ResizeImages(filePath string) ([]string, error) {
+type ResizedImageUrlAndSizeModel struct {
+	Url string `json:"url"`
+	Size int64 `json:"size"`
+}
+
+func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeModel, error) {
 	sizes := []string{
 		"720p",
 		"480p",
@@ -112,7 +117,7 @@ func (s *MediaService) ResizeImages(filePath string) ([]string, error) {
 
 	defer file.Close()
 
-	var newFiles []string
+	var newFiles []ResizedImageUrlAndSizeModel
 
 	switch ext {
 		case "jpg":
@@ -134,7 +139,10 @@ func (s *MediaService) ResizeImages(filePath string) ([]string, error) {
 				m := resize.Resize(uint(intSize), 0, img, resize.Lanczos3)
 
 				newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
+
+
 				out, err := os.Create(newFileName)
+
 
 				if err != nil {
 					return nil, err
@@ -146,9 +154,20 @@ func (s *MediaService) ResizeImages(filePath string) ([]string, error) {
 
 				newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
 
-				newFiles = append(newFiles, newUrl)
-
 				out.Close()
+
+				fileInfo, err := out.Stat()
+
+				if err != nil {
+					return nil, err
+				}
+
+				model := ResizedImageUrlAndSizeModel{
+					Url: newUrl,
+					Size: fileInfo.Size(),
+				}
+
+				newFiles = append(newFiles, model)
 
 			}
 
@@ -181,10 +200,22 @@ func (s *MediaService) ResizeImages(filePath string) ([]string, error) {
 				baseNewFilePath := strings.Split(newFileName, "./media/")[1]
 
 				newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
-
-				newFiles = append(newFiles, newUrl)
 				
 				out.Close()
+
+				fileInfo, err := out.Stat()
+
+				if err != nil {
+					return nil, err
+				}
+
+				model := ResizedImageUrlAndSizeModel{
+					Url: newUrl,
+					Size: fileInfo.Size(),
+				}
+
+				newFiles = append(newFiles, model)
+
 			}
 
 		case "jpeg":
@@ -217,14 +248,41 @@ func (s *MediaService) ResizeImages(filePath string) ([]string, error) {
 
 				newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
 
-				newFiles = append(newFiles, newUrl)
-
 				out.Close()
+
+				fileInfo, err := out.Stat()
+
+				if err != nil {
+					return nil, err
+				}
+
+				model := ResizedImageUrlAndSizeModel{
+					Url: newUrl,
+					Size: fileInfo.Size(),
+				}
+
+				newFiles = append(newFiles, model)
+
 			}
 
 	}
 
 	log.Println("Resized images for", filePath)
+
+	originalUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", filePath)
+
+	fileInfo, err := file.Stat()
+
+	if err != nil {
+		return nil, err
+	}
+
+	model := ResizedImageUrlAndSizeModel{
+		Url: originalUrl,
+		Size: fileInfo.Size(),
+	}
+
+	newFiles = append(newFiles, model)
 
 	return newFiles, nil
 
