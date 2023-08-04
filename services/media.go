@@ -136,7 +136,7 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 					return nil, err
 				}
 
-				m := resize.Resize(uint(intSize), 0, img, resize.Lanczos3)
+				m := resize.Resize(0, uint(intSize), img, resize.Lanczos3)
 
 				newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
 
@@ -188,7 +188,7 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 					return nil, err
 				}
 
-				m := resize.Resize(uint(intSize), 0, img, resize.Lanczos3)
+				m := resize.Resize(0, uint(intSize), img, resize.Lanczos3)
 
 				newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
 				out, err := os.Create(newFileName)
@@ -235,7 +235,7 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 					return nil, err
 				}
 
-				m := resize.Resize(uint(intSize), 0, img, resize.Lanczos3)
+				m := resize.Resize(0, uint(intSize), img, resize.Lanczos3)
 
 				newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
 				out, err := os.Create(newFileName)
