@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	
 	"github.com/pusher/pusher-http-go/v5"
 	"go.uber.org/fx"
 )
@@ -22,7 +23,7 @@ func CreatePusherClient(lc fx.Lifecycle) *pusher.Client {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 
-
+			
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {

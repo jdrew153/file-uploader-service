@@ -9,13 +9,12 @@ import (
 )
 
 func CreateRedisClient(lc fx.Lifecycle) *redis.Client {
-
 	opts, _ := redis.ParseURL(os.Getenv("REDIS_URL"))
 	client := redis.NewClient(opts)
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-		
+			
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
