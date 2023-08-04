@@ -74,12 +74,21 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 	defer cancel()
 
+	err := r.ParseMultipartForm(32 << 20)
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	var done = make(chan bool)
 
 	go func(r *http.Request) {
 
 		apiKey := r.MultipartForm.Value["apiKey"][0]
 
+		
 		err := c.Service.APIKeyCheck(apiKey)
 
 		if err != nil {
