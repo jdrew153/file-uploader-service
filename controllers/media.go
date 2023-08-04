@@ -84,8 +84,6 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusUnauthorized)
-			return
 		}
 		
 		log.Println("API Key: ", apiKey)
