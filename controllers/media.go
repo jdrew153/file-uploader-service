@@ -78,8 +78,16 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 	go func(r *http.Request) {
 
-		apiKey := r.Header.Get("x-api-key")
+		apiKey := r.MultipartForm.Value["apiKey"][0]
 
+		err := c.Service.APIKeyCheck(apiKey)
+
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		
 		log.Println("API Key: ", apiKey)
 
 		ext := r.URL.Query().Get("ext")
@@ -257,31 +265,6 @@ type DownloadMediaRequest struct {
 	FileName string `json:"fileName"`
 }
 
-func (c *MediaController) DownloadMediaFromUrl(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	var body DownloadMediaRequest
-
-	err := json.NewDecoder(r.Body).Decode(&body)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = c.Service.MediaFromURLFileWriter(body.Url, body.FileName)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-}
 
 
 func SetCacheHeaders(w http.ResponseWriter, r *http.Request, filePath string) {
@@ -297,3 +280,38 @@ func SetCacheHeaders(w http.ResponseWriter, r *http.Request, filePath string) {
 	}
 }
 
+
+
+type ResizeImagesRequest struct {
+	FilePath string `json:"filePath"`
+}
+
+
+func (c *MediaController) ResizeImagesController(w http.ResponseWriter, r *http.Request) {
+
+	var body ResizeImagesRequest
+
+	err := json.NewDecoder(r.Body).Decode(&body)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	newFiles, err := c.Service.ResizeImages(body.FilePath)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	bytes, err := json.Marshal(newFiles)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Write([]byte(bytes))
+
+}
