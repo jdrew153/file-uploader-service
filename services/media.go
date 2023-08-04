@@ -154,8 +154,6 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 
 				newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
 
-				out.Close()
-
 				fileInfo, err := out.Stat()
 
 				if err != nil {
@@ -168,6 +166,10 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 				}
 
 				newFiles = append(newFiles, model)
+
+				out.Close()
+
+				
 
 			}
 
@@ -200,8 +202,6 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 				baseNewFilePath := strings.Split(newFileName, "./media/")[1]
 
 				newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
-				
-				out.Close()
 
 				fileInfo, err := out.Stat()
 
@@ -215,6 +215,8 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 				}
 
 				newFiles = append(newFiles, model)
+				
+				out.Close()
 
 			}
 
@@ -248,8 +250,6 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 
 				newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
 
-				out.Close()
-
 				fileInfo, err := out.Stat()
 
 				if err != nil {
@@ -262,6 +262,9 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 				}
 
 				newFiles = append(newFiles, model)
+
+				out.Close()
+
 
 			}
 
