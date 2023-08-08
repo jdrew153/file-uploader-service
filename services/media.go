@@ -16,7 +16,6 @@ import (
 
 	"github.com/hashicorp/golang-lru/v2"
 	"github.com/nfnt/resize"
-	"github.com/pelletier/go-toml/query"
 	"github.com/redis/go-redis/v9"
 	"github.com/savsgio/gotils/uuid"
 )
