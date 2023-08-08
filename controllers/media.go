@@ -103,6 +103,8 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 		fileId := r.URL.Query().Get("fileId")
 		remote := r.URL.Query().Get("remote")
 
+		log.Println("Remote: ", remote)
+
 		sentFileSize, _ := strconv.Atoi(r.URL.Query().Get("totalSize"))
 
 		// header needs to be random
@@ -216,6 +218,9 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 			
 
 			if remote == "true" {
+
+				log.Println("Remote upload detected")
+
 				newUploadModel := services.NewUploadModel{
 					Url: fmt.Sprintf("https://kaykatjd.com/media/joshie_%s.%s", fileId, ext),
 					FileType: ext,
@@ -226,6 +231,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 	
 				c.Service.WriteNewUploadsToDB([]services.NewUploadModel{newUploadModel})
 			}
+
 
 			w.WriteHeader(http.StatusCreated)
 		}
@@ -327,7 +333,7 @@ func (c *MediaController) ResizeImagesController(w http.ResponseWriter, r *http.
 		return
 	}
     /// TODO - add resize images to db
-	
+
 	bytes, err := json.Marshal(newFiles)
 
 	if err != nil {
