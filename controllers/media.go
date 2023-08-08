@@ -101,7 +101,9 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 		totalChunks, _ := strconv.Atoi(r.URL.Query().Get("totalChunks"))
 		baseFileName := r.URL.Query().Get("fileName")
 		fileId := r.URL.Query().Get("fileId")
-		remote := r.URL.Query().Get("remote")
+		dirtyRemote := r.URL.Query().Get("remote")
+
+		remote := strings.Replace(dirtyRemote, " ", "", -1)
 
 		log.Println("Remote:", remote)
 
