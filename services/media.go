@@ -328,8 +328,8 @@ func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 
 	for _, upload := range uploads {
 
-		result, err := s.Db.Exec("INSERT INTO uploads (id, url, fileType, createdAt, size, applicationId) VALUES ($1, $2, $3, $4, $5)", 
-		uuid.V4(), upload.Url, upload.FileType, time.Now().Unix(), upload.Size, upload.ApplicationId, upload.UserId)
+		result, err := s.Db.Exec("INSERT INTO uploads (id, url, fileType, createdAt, size, applicationId) VALUES ($1, $2, $3, $4, $5, $6)", 
+		uuid.V4(), upload.Url, upload.FileType, time.Now().Unix(), upload.Size, upload.ApplicationId)
 
 		if err != nil {
 			return err
