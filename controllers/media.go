@@ -103,7 +103,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 		fileId := r.URL.Query().Get("fileId")
 		remote := r.URL.Query().Get("remote")
 
-		log.Println("Remote: ", remote)
+		log.Println("Remote:", remote)
 
 		sentFileSize, _ := strconv.Atoi(r.URL.Query().Get("totalSize"))
 
@@ -216,6 +216,8 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 
 
 			remoteBool, _ := strconv.ParseBool(remote)
+
+			log.Printf("remote bool: %t", remoteBool)
 
 			if remoteBool {
 
