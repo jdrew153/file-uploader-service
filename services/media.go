@@ -89,8 +89,8 @@ func (s *MediaService) CalculateCacheWeight() {
 }
 
 type ValidUserIDAndAppIDModel struct {
-	UserId string `json:"user_id"`
-	ApplicationId string `json:"application_id"`
+	UserId string `json:"userId"`
+	ApplicationId string `json:"applicationId"`
 }
 
 func (s *MediaService) APIKeyCheck(apiKey string) (*ValidUserIDAndAppIDModel, error) {
