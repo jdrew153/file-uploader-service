@@ -233,7 +233,13 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 					UserId: authModel.UserId,
 				}
 	
-				c.Service.WriteNewUploadsToDB([]services.NewUploadModel{newUploadModel})
+				err = c.Service.WriteNewUploadsToDB([]services.NewUploadModel{newUploadModel})
+
+				if err != nil {
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 			}
 
 

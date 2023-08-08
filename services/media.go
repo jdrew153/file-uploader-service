@@ -326,7 +326,6 @@ type NewUploadModel struct {
 
 func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 
-	
 	for _, upload := range uploads {
 
 		result, err := s.Db.Exec("INSERT INTO uploads (id, url, fileType, createdAt, size, applicationId) VALUES ($1, $2, $3, $4, $5)", 
