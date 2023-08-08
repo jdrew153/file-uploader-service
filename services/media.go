@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"image/jpeg"
 	"image/png"
@@ -10,21 +11,27 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/golang-lru/v2"
+	"github.com/jdrew153/models"
 	"github.com/nfnt/resize"
 	"github.com/redis/go-redis/v9"
+	"github.com/savsgio/gotils/uuid"
+	"gorm.io/gorm"
 )
 
 type MediaService struct {
 	Cache *lru.Cache[string, []byte]
 	Redis *redis.Client
+	Db *gorm.DB
 }
 
-func NewMediaService(cache *lru.Cache[string, []byte], redis *redis.Client) *MediaService {
+func NewMediaService(cache *lru.Cache[string, []byte], redis *redis.Client, db *gorm.DB) *MediaService {
 	return &MediaService{
 		Cache: cache,
 		Redis: redis,
+		Db: db,
 	}
 }
 
@@ -82,15 +89,33 @@ func (s *MediaService) CalculateCacheWeight() {
 	log.Println("Cache size", size / 1000000, "MB")
 }
 
-func (s *MediaService) APIKeyCheck(apiKey string) error {
-	_, err := s.Redis.Get(context.Background(), apiKey).Result()
+type ValidUserIDAndAppIDModel struct {
+	UserId string `json:"user_id"`
+	ApplicationId string `json:"application_id"`
+}
+
+func (s *MediaService) APIKeyCheck(apiKey string) (*ValidUserIDAndAppIDModel, error) {
+
+	var validUserIDAndAppID ValidUserIDAndAppIDModel
+
+	value, err := s.Redis.Get(context.Background(), apiKey).Result()
+
 
 	if err != nil {
 		log.Println(err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	err = json.Unmarshal([]byte(value), &validUserIDAndAppID)
+
+	if err != nil {
+		return nil, err
+
+	}	
+
+	log.Printf("Value from api key %s\n", value)
+
+	return &validUserIDAndAppID, nil
 }
 
 type ResizedImageUrlAndSizeModel struct {
@@ -289,4 +314,39 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 
 	return newFiles, nil
 
+}
+
+
+type NewUploadModel struct {
+	Url string `json:"url"`
+	FileType string `json:"fileType"`
+	Size string `json:"size"`
+	ApplicationId string `json:"applicationId"`
+	UserId string `json:"userId"`
+}
+
+func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
+
+	
+	for _, upload := range uploads {
+
+		err := s.Db.Create(&models.Upload{
+			Url: upload.Url,
+			FileType: upload.FileType,
+			Size: upload.Size,
+			ApplicationId: upload.ApplicationId,
+			CreatedAt: time.Now().UnixMilli(),
+			Id: uuid.V4(),
+			UserId: upload.UserId,
+		}).Error
+
+		if err != nil {
+			return err
+		}
+
+	}
+
+	log.Println("Wrote new uploads to db")
+
+	return nil
 }

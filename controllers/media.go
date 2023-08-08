@@ -82,14 +82,13 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	apiKey := r.MultipartForm.Value["apiKey"][0]
+
 	var done = make(chan bool)
 
 	go func(r *http.Request) {
 
-		apiKey := r.MultipartForm.Value["apiKey"][0]
-
-		
-		err := c.Service.APIKeyCheck(apiKey)
+		authModel, err := c.Service.APIKeyCheck(apiKey)
 
 		if err != nil {
 			log.Println(err)
@@ -102,6 +101,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 		totalChunks, _ := strconv.Atoi(r.URL.Query().Get("totalChunks"))
 		baseFileName := r.URL.Query().Get("fileName")
 		fileId := r.URL.Query().Get("fileId")
+		remote := r.URL.Query().Get("remote")
 
 		sentFileSize, _ := strconv.Atoi(r.URL.Query().Get("totalSize"))
 
@@ -212,6 +212,21 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 				return
 			}
 
+
+			
+
+			if remote == "true" {
+				newUploadModel := services.NewUploadModel{
+					Url: fmt.Sprintf("https://kaykatjd.com/media/joshie_%s.%s", fileId, ext),
+					FileType: ext,
+					Size: strconv.Itoa(int(totalSize)),
+					ApplicationId: authModel.ApplicationId,
+					UserId: authModel.UserId,
+				}
+	
+				c.Service.WriteNewUploadsToDB([]services.NewUploadModel{newUploadModel})
+			}
+
 			w.WriteHeader(http.StatusCreated)
 		}
 
@@ -311,13 +326,15 @@ func (c *MediaController) ResizeImagesController(w http.ResponseWriter, r *http.
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+    /// TODO - add resize images to db
+	
 	bytes, err := json.Marshal(newFiles)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 
 	w.Write([]byte(bytes))
 

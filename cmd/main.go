@@ -18,6 +18,7 @@ func main() {
 			lib.CreatePusherClient,
 			lib.CreateRedisClient,
 			lib.CreateCache,
+			lib.CreateDBConnection,
 		),
 		fx.Invoke(server.NewMuxServer),
 	).Run()
