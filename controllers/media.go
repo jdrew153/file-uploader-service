@@ -224,6 +224,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 			if remoteBool {
 
 				log.Println("Remote upload detected")
+				log.Println("Application ID sent to service", authModel.ApplicationId)
 
 				newUploadModel := services.NewUploadModel{
 					Url: fmt.Sprintf("https://kaykatjd.com/media/joshie_%s.%s", fileId, ext),
