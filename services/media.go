@@ -16,6 +16,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/v2"
 	"github.com/nfnt/resize"
+	"github.com/pelletier/go-toml/query"
 	"github.com/redis/go-redis/v9"
 	"github.com/savsgio/gotils/uuid"
 )
@@ -328,14 +329,27 @@ func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 
 	for _, upload := range uploads {
 
-		result, err := s.Db.Exec("INSERT INTO uploads (id, url, fileType, createdAt, size, applicationId) VALUES ($1, $2, $3, $4, $5, $6)", 
-		uuid.V4(), upload.Url, upload.FileType, time.Now().Unix(), upload.Size, upload.ApplicationId)
+		query := "INSERT INTO uploads (id, url, fileType, createdAt, size, applicationId) VALUES (?, ?, ?, ?, ?, ?)"
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+		defer cancel()
+
+		stmt, err := s.Db.PrepareContext(ctx, query)
 
 		if err != nil {
 			return err
 		}
 
-		log.Printf("Wrote new upload to db: %v", result)
+		defer stmt.Close()
+
+		result, err := s.Db.ExecContext(ctx, uuid.V4(), upload.Url, upload.FileType, time.Now().Unix(), upload.Size, upload.ApplicationId)
+
+		if err != nil {
+			return err
+		}
+
+		log.Printf("Wrote new upload to db with result %v", result)
 
 	}
 
