@@ -103,7 +103,7 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 		fileId := r.URL.Query().Get("fileId")
 		dirtyRemote := r.URL.Query().Get("remote")
 
-		remote := strings.Replace(dirtyRemote, " ", "", -1)
+		remote := strings.Trim(dirtyRemote, "\"")
 
 		log.Println("Remote:", remote)
 
