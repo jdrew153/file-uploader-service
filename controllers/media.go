@@ -215,9 +215,9 @@ func (c *MediaController) DownloadContent(w http.ResponseWriter, r *http.Request
 			}
 
 
-			log.Println(remote == "true")
+			remoteBool, _ := strconv.ParseBool(remote)
 
-			if remote == "true" {
+			if remoteBool {
 
 				log.Println("Remote upload detected")
 
