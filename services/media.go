@@ -346,7 +346,7 @@ func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 
 		id := uuid.V4()
 
-		result, err := stmt.ExecContext(ctx, id, upload.Url, upload.FileType, time.Now().Unix(), upload.Size, upload.ApplicationId)
+		result, err := stmt.ExecContext(ctx, id, upload.Url, upload.FileType, time.Now().UnixMilli(), upload.Size, upload.ApplicationId)
 
 		if err != nil {
 			return err
