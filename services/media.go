@@ -342,7 +342,9 @@ func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 
 		defer stmt.Close()
 
-		result, err := s.Db.ExecContext(ctx, uuid.V4(), upload.Url, upload.FileType, time.Now().Unix(), upload.Size, upload.ApplicationId)
+		id := uuid.V4()
+
+		result, err := stmt.ExecContext(ctx, id, upload.Url, upload.FileType, time.Now().Unix(), upload.Size, upload.ApplicationId)
 
 		if err != nil {
 			return err
