@@ -1,9 +1,7 @@
 package models
 
-import "gorm.io/gorm"
 
 type Upload struct {
-	gorm.Model
 	Id string  `json:"Id" gorm:"primaryKey"`
 	Url string  `json:"url"`
 	FileType string  `json:"fileType"`

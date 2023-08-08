@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"image/jpeg"
@@ -14,20 +15,18 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2"
-	"github.com/jdrew153/models"
 	"github.com/nfnt/resize"
 	"github.com/redis/go-redis/v9"
 	"github.com/savsgio/gotils/uuid"
-	"gorm.io/gorm"
 )
 
 type MediaService struct {
 	Cache *lru.Cache[string, []byte]
 	Redis *redis.Client
-	Db *gorm.DB
+	Db *sql.DB
 }
 
-func NewMediaService(cache *lru.Cache[string, []byte], redis *redis.Client, db *gorm.DB) *MediaService {
+func NewMediaService(cache *lru.Cache[string, []byte], redis *redis.Client, db *sql.DB) *MediaService {
 	return &MediaService{
 		Cache: cache,
 		Redis: redis,
@@ -330,15 +329,8 @@ func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 	
 	for _, upload := range uploads {
 
-		err := s.Db.Create(&models.Upload{
-			Url: upload.Url,
-			FileType: upload.FileType,
-			Size: upload.Size,
-			ApplicationId: upload.ApplicationId,
-			CreatedAt: time.Now().UnixMilli(),
-			Id: uuid.V4(),
-			UserId: upload.UserId,
-		}).Error
+		_, err := s.Db.Exec("INSERT INTO uploads (id, url, fileType, createdAt, size, applicationId) VALUES ($1, $2, $3, $4, $5)", 
+		uuid.V4(), upload.Url, upload.FileType, time.Now().Unix(), upload.Size, upload.ApplicationId, upload.UserId)
 
 		if err != nil {
 			return err

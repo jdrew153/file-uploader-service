@@ -2,17 +2,17 @@ package lib
 
 import (
 	"context"
+	"database/sql"
 	"os"
 
 	"go.uber.org/fx"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 
-func CreateDBConnection(lc fx.Lifecycle) *gorm.DB {
+func CreateDBConnection(lc fx.Lifecycle) *sql.DB {
 
-	db, err := gorm.Open(mysql.Open(os.Getenv("DSN")), &gorm.Config{})
+	db, err := sql.Open("mysql", os.Getenv("DSN"))
 
 
 	lc.Append(fx.Hook{
@@ -25,8 +25,8 @@ func CreateDBConnection(lc fx.Lifecycle) *gorm.DB {
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			sqlDB, _ := db.DB()
-			err := sqlDB.Close()
+		
+			err := db.Close()
 			if err != nil {
 				return err
 			}
