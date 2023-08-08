@@ -328,6 +328,8 @@ func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 
 	for _, upload := range uploads {
 
+		log.Println("Application ID", upload.ApplicationId)
+
 		query := "INSERT INTO uploads (id, url, fileType, createdAt, size, applicationId) VALUES (?, ?, ?, ?, ?, ?)"
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
