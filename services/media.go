@@ -93,7 +93,7 @@ type ValidUserIDAndAppIDModel struct {
 	ApplicationId string `json:"applicationId"`
 }
 
-func (s *MediaService) APIKeyCheck(apiKey string) (*ValidUserIDAndAppIDModel, error) {
+func (s *MediaService) APIKeyCheck(apiKey string) (ValidUserIDAndAppIDModel, error) {
 
 	var validUserIDAndAppID ValidUserIDAndAppIDModel
 
@@ -102,19 +102,19 @@ func (s *MediaService) APIKeyCheck(apiKey string) (*ValidUserIDAndAppIDModel, er
 
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return validUserIDAndAppID, err
 	}
 
 	err = json.Unmarshal([]byte(value), &validUserIDAndAppID)
 
 	if err != nil {
-		return nil, err
+		return validUserIDAndAppID, err
 
 	}	
 
 	log.Printf("Value from api key %s\n", value)
 
-	return &validUserIDAndAppID, nil
+	return validUserIDAndAppID, nil
 }
 
 type ResizedImageUrlAndSizeModel struct {
