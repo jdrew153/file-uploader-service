@@ -99,6 +99,8 @@ func (s *MediaService) APIKeyCheck(apiKey string) (ValidUserIDAndAppIDModel, err
 
 	value, err := s.Redis.Get(context.Background(), apiKey).Result()
 
+	log.Println("Value from api key", value)
+
 
 	if err != nil {
 		log.Println(err)
