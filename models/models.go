@@ -10,3 +10,4 @@ type Upload struct {
 	ApplicationId string `json:"applicationId"`
 	UserId string `json:"userId"`
 }
+

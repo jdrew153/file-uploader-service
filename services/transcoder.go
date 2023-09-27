@@ -263,8 +263,7 @@ func (s *TranscoderService) CreateM3U8(inputPath string, resoultion string) erro
 	cmd := exec.Command("ffmpeg", "-i", currFilePath, "-c:v", "h264", "-b:v", "1M", "-hls_time", "10", "-hls_list_size", "0", m3u8FilePath)
 
 
-	// Redirect stderr to a buffer to capture any errors from ffmpeg command.
-	cmd.Stderr = &bytes.Buffer{}
+	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
 

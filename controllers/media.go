@@ -20,11 +20,13 @@ import (
 
 type MediaController struct {
 	Service *services.MediaService
+	Sploader *services.SploaderService
 }
 
-func NewMediaController(s *services.MediaService) *MediaController {
+func NewMediaController(s *services.MediaService, sploader *services.SploaderService) *MediaController {
 	return &MediaController{
 		Service: s,
+		Sploader: sploader,
 	}
 }
 
@@ -319,7 +321,6 @@ func SetCacheHeaders(w http.ResponseWriter, r *http.Request, filePath string) {
 		w.Header().Set("Cache-Control", "public, max-age=3600")
 	}
 }
-
 
 
 type ResizeImagesRequest struct {

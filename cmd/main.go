@@ -15,10 +15,12 @@ func main() {
 			controllers.NewMediaController,
 			services.NewTranscoderService,
 			services.NewMediaService,
+			services.NewSploaderService,
 			lib.CreatePusherClient,
 			lib.CreateRedisClient,
 			lib.CreateCache,
 			lib.CreateDBConnection,
+			
 		),
 		fx.Invoke(server.NewMuxServer),
 	).Run()

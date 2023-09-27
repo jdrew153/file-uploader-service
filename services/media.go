@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chai2010/webp"
 	"github.com/hashicorp/golang-lru/v2"
 	"github.com/nfnt/resize"
 	"github.com/redis/go-redis/v9"
@@ -23,14 +25,14 @@ import (
 type MediaService struct {
 	Cache *lru.Cache[string, []byte]
 	Redis *redis.Client
-	Db *sql.DB
+	Db    *sql.DB
 }
 
 func NewMediaService(cache *lru.Cache[string, []byte], redis *redis.Client, db *sql.DB) *MediaService {
 	return &MediaService{
 		Cache: cache,
 		Redis: redis,
-		Db: db,
+		Db:    db,
 	}
 }
 
@@ -72,24 +74,40 @@ func (s *MediaService) Set(inputPath string) error {
 
 	s.Cache.Add(inputPath, buffer)
 
-
-
 	return nil
 }
 
 func (s *MediaService) CalculateCacheWeight() {
 
 	size := 0
-	
-	for _, entries  := range s.Cache.Values() {
+
+	var heaviestIndx int
+	var heaviestSize int
+
+	for indx, entries := range s.Cache.Values() {
 		size += len(entries)
+
+		if len(entries) > heaviestSize {
+			heaviestSize = len(entries)
+			heaviestIndx = indx
+		}
 	}
 
-	log.Println("Cache size", size / 1000000, "MB")
+	log.Println("Cache size", size/1000000, "MB")
+
+	cachedSizeMB := size / 1000000
+
+	if cachedSizeMB > 1500 {
+		heaviestKey := s.Cache.Keys()[heaviestIndx]
+
+		s.Cache.Remove(heaviestKey)
+
+		log.Println("Removed key", heaviestKey)
+	}
 }
 
 type ValidUserIDAndAppIDModel struct {
-	UserId string `json:"userId"`
+	UserId        string `json:"userId"`
 	ApplicationId string `json:"applicationId"`
 }
 
@@ -101,7 +119,6 @@ func (s *MediaService) APIKeyCheck(apiKey string) (ValidUserIDAndAppIDModel, err
 
 	log.Println("Value from api key", value)
 
-
 	if err != nil {
 		log.Println(err)
 		return validUserIDAndAppID, err
@@ -112,7 +129,7 @@ func (s *MediaService) APIKeyCheck(apiKey string) (ValidUserIDAndAppIDModel, err
 	if err != nil {
 		return validUserIDAndAppID, err
 
-	}	
+	}
 
 	log.Printf("Value from api key %s\n", value)
 
@@ -120,8 +137,8 @@ func (s *MediaService) APIKeyCheck(apiKey string) (ValidUserIDAndAppIDModel, err
 }
 
 type ResizedImageUrlAndSizeModel struct {
-	Url string `json:"url"`
-	Size int64 `json:"size"`
+	Url  string `json:"url"`
+	Size int64  `json:"size"`
 }
 
 func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeModel, error) {
@@ -146,153 +163,154 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 	var newFiles []ResizedImageUrlAndSizeModel
 
 	switch ext {
-		case "jpg":
+	case "jpg":
 
-			img, err := jpeg.Decode(file)
+		img, err := jpeg.Decode(file)
 
-			if err != nil {
-				return nil, err
-			}
+		if err != nil {
+			return nil, err
+		}
 
-			for _, size := range sizes {
-				parsedSize := strings.Split(size, "p")[0]
-				intSize, err := strconv.Atoi(parsedSize)
-
-				if err != nil {
-					return nil, err
-				}
-
-				m := resize.Resize(0, uint(intSize), img, resize.Lanczos3)
-
-				newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
-
-
-				out, err := os.Create(newFileName)
-
-
-				if err != nil {
-					return nil, err
-				}
-
-				jpeg.Encode(out, m, nil)
-
-				baseNewFilePath := strings.Split(newFileName, "./media/")[1]
-
-				newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
-
-				fileInfo, err := out.Stat()
-
-				if err != nil {
-					return nil, err
-				}
-
-				model := ResizedImageUrlAndSizeModel{
-					Url: newUrl,
-					Size: fileInfo.Size(),
-				}
-
-				newFiles = append(newFiles, model)
-
-				out.Close()
-
-				
-
-			}
-
-			case "png":
-				img, err := png.Decode(file)
+		for _, size := range sizes {
+			parsedSize := strings.Split(size, "p")[0]
+			intSize, err := strconv.Atoi(parsedSize)
 
 			if err != nil {
 				return nil, err
 			}
 
-			for _, size := range sizes {
-				parsedSize := strings.Split(size, "p")[0]
-				intSize, err := strconv.Atoi(parsedSize)
+			m := resize.Resize(0, uint(intSize), img, resize.Lanczos3)
 
-				if err != nil {
-					return nil, err
-				}
+			newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
 
-				m := resize.Resize(0, uint(intSize), img, resize.Lanczos3)
-
-				newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
-				out, err := os.Create(newFileName)
-
-				if err != nil {
-					return nil, err
-				}
-
-				png.Encode(out, m)
-
-				baseNewFilePath := strings.Split(newFileName, "./media/")[1]
-
-				newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
-
-				fileInfo, err := out.Stat()
-
-				if err != nil {
-					return nil, err
-				}
-
-				model := ResizedImageUrlAndSizeModel{
-					Url: newUrl,
-					Size: fileInfo.Size(),
-				}
-
-				newFiles = append(newFiles, model)
-				
-				out.Close()
-
-			}
-
-		case "jpeg":
-			img, err := jpeg.Decode(file)
+			out, err := os.Create(newFileName)
 
 			if err != nil {
 				return nil, err
 			}
 
-			for _, size := range sizes {
-				parsedSize := strings.Split(size, "p")[0]
-				intSize, err := strconv.Atoi(parsedSize)
+			jpeg.Encode(out, m, nil)
 
-				if err != nil {
-					return nil, err
-				}
+			baseNewFilePath := strings.Split(newFileName, "./media/")[1]
 
-				m := resize.Resize(0, uint(intSize), img, resize.Lanczos3)
+			newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
 
-				newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
-				out, err := os.Create(newFileName)
+			fileInfo, err := out.Stat()
 
-				if err != nil {
-					return nil, err
-				}
-
-				jpeg.Encode(out, m, nil)
-
-				baseNewFilePath := strings.Split(newFileName, "./media/")[1]
-
-				newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
-
-				fileInfo, err := out.Stat()
-
-				if err != nil {
-					return nil, err
-				}
-
-				model := ResizedImageUrlAndSizeModel{
-					Url: newUrl,
-					Size: fileInfo.Size(),
-				}
-
-				newFiles = append(newFiles, model)
-
-				out.Close()
-
-
+			if err != nil {
+				return nil, err
 			}
+
+			model := ResizedImageUrlAndSizeModel{
+				Url:  newUrl,
+				Size: fileInfo.Size(),
+			}
+
+			newFiles = append(newFiles, model)
+
+			out.Close()
+
+		}
+
+	case "png":
+		img, err := png.Decode(file)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, size := range sizes {
+			parsedSize := strings.Split(size, "p")[0]
+			intSize, err := strconv.Atoi(parsedSize)
+
+			if err != nil {
+				return nil, err
+			}
+
+			m := resize.Resize(0, uint(intSize), img, resize.Lanczos3)
+
+			newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
+			out, err := os.Create(newFileName)
+
+			if err != nil {
+				return nil, err
+			}
+
+			png.Encode(out, m)
+
+			baseNewFilePath := strings.Split(newFileName, "./media/")[1]
+
+			newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
+
+			fileInfo, err := out.Stat()
+
+			if err != nil {
+				return nil, err
+			}
+
+			model := ResizedImageUrlAndSizeModel{
+				Url:  newUrl,
+				Size: fileInfo.Size(),
+			}
+
+			newFiles = append(newFiles, model)
+
+			out.Close()
+
+		}
+
+	case "jpeg":
+		img, err := jpeg.Decode(file)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, size := range sizes {
+			parsedSize := strings.Split(size, "p")[0]
+			intSize, err := strconv.Atoi(parsedSize)
+
+			if err != nil {
+				return nil, err
+			}
+
+			m := resize.Resize(0, uint(intSize), img, resize.Lanczos3)
+
+			newFileName := fmt.Sprintf("./media/%s-%s.%s", basePath, size, ext)
+			out, err := os.Create(newFileName)
+
+			if err != nil {
+				return nil, err
+			}
+
+			jpeg.Encode(out, m, nil)
+
+			baseNewFilePath := strings.Split(newFileName, "./media/")[1]
+
+			_ = fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
+
+			webPUrl, err := s.ConvJPEGToWEBP(baseNewFilePath)
+
+			if err != nil {
+				return nil, err
+			}
+
+			fileInfo, err := out.Stat()
+
+			if err != nil {
+				return nil, err
+			}
+
+			model := ResizedImageUrlAndSizeModel{
+				Url:  webPUrl,
+				Size: fileInfo.Size(),
+			}
+
+			newFiles = append(newFiles, model)
+
+			out.Close()
+
+		}
 
 	}
 
@@ -307,7 +325,7 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 	}
 
 	model := ResizedImageUrlAndSizeModel{
-		Url: originalUrl,
+		Url:  originalUrl,
 		Size: fileInfo.Size(),
 	}
 
@@ -317,13 +335,54 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 
 }
 
+func (s *MediaService) GenerateThumbnail(fileName string) (string, error) {
+
+	file, err := os.Open(fmt.Sprintf("./media/%s", fileName))
+
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+
+	defer file.Close()
+
+	img, err := jpeg.Decode(file)
+
+	if err != nil {
+		return "", err
+	}
+
+	m := resize.Thumbnail(200, 200, img, resize.Lanczos3)
+
+	newFileName := fmt.Sprintf("./media/%s-thumbnail.jpg", fileName)
+
+	out, err := os.Create(newFileName)
+
+	if err != nil {
+		return "", err
+	}
+
+	jpeg.Encode(out, m, nil)
+
+	out.Close()
+
+	baseNewFilePath := strings.Split(newFileName, "./media/")[1]
+
+	newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
+
+	log.Println("Generated thumbnail for", fileName)
+
+	return newUrl, nil
+
+}
+
 
 type NewUploadModel struct {
-	Url string `json:"url"`
-	FileType string `json:"fileType"`
-	Size string `json:"size"`
+	Url           string `json:"url"`
+	FileType      string `json:"fileType"`
+	Size          string `json:"size"`
 	ApplicationId string `json:"applicationId"`
-	UserId string `json:"userId"`
+	UserId        string `json:"userId"`
 }
 
 func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
@@ -361,4 +420,54 @@ func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 	log.Println("Wrote new uploads to db")
 
 	return nil
+}
+
+
+func (s *MediaService) ConvJPEGToWEBP(
+	filename string,
+) (string, error) {
+
+	file, err := os.Open(fmt.Sprintf("./media/%s", filename))
+
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	img, err := jpeg.Decode(file)
+
+	if err != nil {
+		return "", err
+	}
+
+	var buff bytes.Buffer
+
+	err = webp.Encode(&buff, img, &webp.Options{Lossless: true})
+
+	if err != nil {
+		return "", err
+	}
+
+	baseFileName := strings.Split(filename, ".")[0]
+
+	newFileName := fmt.Sprintf("./media/%s.webp", baseFileName)
+
+	out, err := os.Create(newFileName)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer out.Close()
+
+	_, err = io.Copy(out, &buff)
+
+	if err != nil {
+		return "", err
+	}
+
+	newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseFileName + ".webp")
+
+	return newUrl, nil
+
 }
