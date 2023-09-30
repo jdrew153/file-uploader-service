@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -50,14 +51,15 @@ func (s *MediaService) Set(inputPath string) error {
 		return err
 	}
 
-	var buffer []byte
+	buffer := make([]byte, 1024)
+
+	data := bytes.Buffer{}
 
 	defer file.Close()
 
 	for {
-		bytes := make([]byte, 1024)
 
-		_, err := file.Read(bytes)
+		n, err := file.Read(buffer)
 
 		if err != nil {
 			if err == io.EOF {
@@ -67,10 +69,10 @@ func (s *MediaService) Set(inputPath string) error {
 			return err
 		}
 
-		buffer = append(buffer, bytes...)
+		data.Write(buffer[:n])
 	}
 
-	s.Cache.Add(inputPath, buffer)
+	s.Cache.Add(inputPath, data.Bytes())
 
 	return nil
 }
@@ -91,8 +93,6 @@ func (s *MediaService) CalculateCacheWeight() {
 		}
 	}
 
-	
-
 	cachedSizeMB := size / 1000000
 
 	log.Println("Cache size", cachedSizeMB, "MB")
@@ -103,15 +103,20 @@ func (s *MediaService) CalculateCacheWeight() {
 
 		ok := s.Cache.Remove(heaviestKey)
 
-		log.Printf("Removed key %s, result %v", heaviestKey, ok)
-	} else {
-		key, _, ok := s.Cache.RemoveOldest()
-
 		if ok {
-			log.Printf("Removed key %s", key)
+
+			log.Printf("Removed key %s, result %v", heaviestKey, ok)
 		} else {
-			log.Println("Could not remove oldest key")
+			key, _, ok := s.Cache.RemoveOldest()
+
+			if ok {
+				log.Printf("Removed key %s", key)
+			} else {
+				log.Println("Could not remove oldest key")
+			}
 		}
+	} else {
+		log.Println("Cache is not too big")
 	}
 }
 
@@ -297,7 +302,6 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 			baseNewFilePath := strings.Split(newFileName, "./media/")[1]
 
 			newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
-			
 
 			fileInfo, err := out.Stat()
 
@@ -380,7 +384,6 @@ func (s *MediaService) GenerateThumbnail(fileName string) (string, error) {
 
 }
 
-
 type NewUploadModel struct {
 	Url           string `json:"url"`
 	FileType      string `json:"fileType"`
@@ -425,7 +428,6 @@ func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 
 	return nil
 }
-
 
 // func (s *MediaService) ConvJPEGToWEBP(
 // 	filename string,
