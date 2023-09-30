@@ -3,7 +3,7 @@ module github.com/jdrew153
 go 1.20
 
 require (
-	github.com/chai2010/webp v1.1.1
+	
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/hashicorp/golang-lru/v2 v2.0.4
 	github.com/redis/go-redis/v9 v9.0.5

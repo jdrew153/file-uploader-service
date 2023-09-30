@@ -1,7 +1,6 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -15,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chai2010/webp"
 	"github.com/hashicorp/golang-lru/v2"
 	"github.com/nfnt/resize"
 	"github.com/redis/go-redis/v9"
@@ -93,16 +91,27 @@ func (s *MediaService) CalculateCacheWeight() {
 		}
 	}
 
-	log.Println("Cache size", size/1000000, "MB")
+	
 
 	cachedSizeMB := size / 1000000
 
-	if cachedSizeMB > 1500 {
+	log.Println("Cache size", cachedSizeMB, "MB")
+
+	if cachedSizeMB > 150 {
+		log.Println("Cache is too big, removing heaviest key")
 		heaviestKey := s.Cache.Keys()[heaviestIndx]
 
-		s.Cache.Remove(heaviestKey)
+		ok := s.Cache.Remove(heaviestKey)
 
-		log.Println("Removed key", heaviestKey)
+		log.Printf("Removed key %s, result %v", heaviestKey, ok)
+	} else {
+		key, _, ok := s.Cache.RemoveOldest()
+
+		if ok {
+			log.Printf("Removed key %s", key)
+		} else {
+			log.Println("Could not remove oldest key")
+		}
 	}
 }
 
@@ -287,13 +296,8 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 
 			baseNewFilePath := strings.Split(newFileName, "./media/")[1]
 
-			_ = fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
-
-			webPUrl, err := s.ConvJPEGToWEBP(baseNewFilePath)
-
-			if err != nil {
-				return nil, err
-			}
+			newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseNewFilePath)
+			
 
 			fileInfo, err := out.Stat()
 
@@ -302,7 +306,7 @@ func (s *MediaService) ResizeImages(filePath string) ([]ResizedImageUrlAndSizeMo
 			}
 
 			model := ResizedImageUrlAndSizeModel{
-				Url:  webPUrl,
+				Url:  newUrl,
 				Size: fileInfo.Size(),
 			}
 
@@ -423,51 +427,51 @@ func (s *MediaService) WriteNewUploadsToDB(uploads []NewUploadModel) error {
 }
 
 
-func (s *MediaService) ConvJPEGToWEBP(
-	filename string,
-) (string, error) {
+// func (s *MediaService) ConvJPEGToWEBP(
+// 	filename string,
+// ) (string, error) {
 
-	file, err := os.Open(fmt.Sprintf("./media/%s", filename))
+// 	file, err := os.Open(fmt.Sprintf("./media/%s", filename))
 
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	defer file.Close()
 
-	img, err := jpeg.Decode(file)
+// 	img, err := jpeg.Decode(file)
 
-	if err != nil {
-		return "", err
-	}
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	var buff bytes.Buffer
+// 	var buff bytes.Buffer
 
-	err = webp.Encode(&buff, img, &webp.Options{Lossless: true})
+// 	err = webp.Encode(&buff, img, &webp.Options{Lossless: true})
 
-	if err != nil {
-		return "", err
-	}
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	baseFileName := strings.Split(filename, ".")[0]
+// 	baseFileName := strings.Split(filename, ".")[0]
 
-	newFileName := fmt.Sprintf("./media/%s.webp", baseFileName)
+// 	newFileName := fmt.Sprintf("./media/%s.webp", baseFileName)
 
-	out, err := os.Create(newFileName)
+// 	out, err := os.Create(newFileName)
 
-	if err != nil {
-		return "", err
-	}
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	defer out.Close()
+// 	defer out.Close()
 
-	_, err = io.Copy(out, &buff)
+// 	_, err = io.Copy(out, &buff)
 
-	if err != nil {
-		return "", err
-	}
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseFileName + ".webp")
+// 	newUrl := fmt.Sprintf("https://kaykatjd.com/media/%s", baseFileName + ".webp")
 
-	return newUrl, nil
+// 	return newUrl, nil
 
-}
+// }
