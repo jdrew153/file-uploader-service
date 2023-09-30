@@ -43,6 +43,7 @@ func (c *MediaController) ServeContent(w http.ResponseWriter, r *http.Request) {
 	if strings.Contains(filePath, ".mp4") || strings.Contains(filePath, ".m3u8") {
 
 		http.ServeFile(w,r, "./" + filePath)
+		return
 	}
 	
 	totalPath := fmt.Sprintf("./%s", filePath)
